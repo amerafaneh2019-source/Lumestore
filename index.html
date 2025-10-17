@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LUME - متجر شموع عطرية</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-dark': '#3a3a3a',
+                        'brand-primary': '#c5a880',
+                        'brand-secondary': '#a1887f',
+                        'brand-light': '#f5f5f5',
+                        'brand-accent': '#e0e0e0',
+                    },
+                    fontFamily: {
+                        sans: ['Tajawal', 'sans-serif'],
+                    },
+                    animation: {
+                        tada: 'tada 0.8s ease-in-out',
+                    },
+                    keyframes: {
+                        tada: {
+                            '0%': { transform: 'scale(1)' },
+                            '10%, 20%': { transform: 'scale(0.9) rotate(-3deg)' },
+                            '30%, 50%, 70%, 90%': { transform: 'scale(1.1) rotate(3deg)' },
+                            '40%, 60%, 80%': { transform: 'scale(1.1) rotate(-3deg)' },
+                            '100%': { transform: 'scale(1) rotate(0)' },
+                        },
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Tajawal', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- React Libraries -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel to transpile JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Your entire React application -->
+    <script type="text/babel">
+        const { useState, useMemo, useEffect, useRef } = React;
+
+        // --- FROM constants.ts ---
+        const SIZES = [
+            { name: 'صغيرة', weight: '٨٠ غرام' },
+            { name: 'وسط', weight: '١٦٠ غرام' },
+            { name: 'كبيرة', weight: '٢٤٠ غرام' }
+        ];
+        const SCENTS_OPTIONS = ['فانيلا', 'ورد', 'ياسمين', 'ليمون', 'عود', 'بابايا', 'لافندر'];
+        const COLOR_OPTIONS = ['#FFFFFF', '#FADADD', '#FFFACD', '#D3E0DC', '#E6E6FA', '#C1E1C1', '#BCA99F'];
+        const PACKAGING_OPTIONS = ['استخدام شخصي', 'هدية'];
+        const PRICING_MAP = {
+            'استخدام شخصي': { 'صغيرة': 2.75, 'وسط': 5.50, 'كبيرة': 7.50 },
+            'هدية': { 'صغيرة': 4.75, 'وسط': 7.50, 'كبيرة': 9.50 }
+        };
+
+        // --- FROM components/icons ---
+        const CartIcon = (props) => (
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c.51 0 .962-.328 1.103-.846l1.5-5.25a.75.75 0 0 0-.7-1.036H5.216a.75.75 0 0 0-.7 1.036l1.5 5.25a1.125 1.125 0 0 1-1.103.846H7.5Z" />
+          </svg>
+        );
+        const TrashIcon = (props) => (
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.036-2.134H8.718c-1.126 0-2.036.954-2.036 2.134v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+          </svg>
+        );
+        const PlusIcon = (props) => (
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+        );
+        const MinusIcon = (props) => (
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+          </svg>
+        );
+        const CloseIcon = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+        );
+
+        // --- FROM components/Header.tsx ---
+        const Header = ({ cartItemCount, onCartClick }) => {
+            const [isAnimating, setIsAnimating] = useState(false);
+            const prevCartItemCount = useRef(cartItemCount);
+
+            useEffect(() => {
+                if (cartItemCount > prevCartItemCount.current) {
+                    setIsAnimating(true);
+                    const timer = setTimeout(() => setIsAnimating(false), 800);
+                    return () => clearTimeout(timer);
+                }
+                prevCartItemCount.current = cartItemCount;
+            }, [cartItemCount]);
+
+            return (
+                <header className="bg-brand-light/80 backdrop-blur-sm sticky top-0 z-40 shadow-sm">
+                    <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+                        <h1 className="text-3xl font-bold text-brand-dark tracking-wider">LUME</h1>
+                        <button 
+                            onClick={onCartClick} 
+                            className={`relative text-brand-secondary hover:text-brand-primary transition-colors ${isAnimating ? 'animate-tada' : ''}`}
+                            aria-label={`View shopping cart with ${cartItemCount} items`}
+                        >
+                            <CartIcon className="w-8 h-8" />
+                            {cartItemCount > 0 && (
+                                <span className="absolute -top-2 -right-2 bg-brand-primary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                                    {cartItemCount}
+                                </span>
+                            )}
+                        </button>
+                    </div>
+                </header>
+            );
+        };
+
+        // --- FROM components/Hero.tsx ---
+        const Hero = () => {
+            return (
+                <div className="relative h-[60vh] bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1594313016519-640ed4727d26?q=80&w=2070&auto=format&fit=crop')" }}>
+                    <div className="absolute inset-0 bg-brand-dark bg-opacity-40" />
+                    <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white px-4">
+                        <h2 className="text-5xl md:text-7xl font-bold tracking-tight">أضيء لحظاتك مع LUME</h2>
+                        <p className="mt-4 text-lg md:text-xl max-w-2xl font-light">
+                            اكتشف مجموعتنا الحصرية من الشموع العطرية المصنوعة يدويًا لإضافة الدفء والسكينة إلى مساحتك.
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- FROM components/ConfirmationModal.tsx ---
+        const ConfirmationModal = ({ isOpen, onClose }) => {
+            if (!isOpen) return null;
+
+            return (
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4"
+                    onClick={onClose}
+                    role="dialog"
+                    aria-modal="true"
+                >
+                    <div
+                        className="bg-white rounded-lg shadow-2xl p-8 max-w-sm w-full text-center relative transform transition-all"
+                        onClick={(e) => e.stopPropagation()}
+                        role="alertdialog"
+                        aria-labelledby="confirmation-title"
+                    >
+                        <button
+                            onClick={onClose}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                            aria-label="Close confirmation"
+                        >
+                            <CloseIcon className="w-6 h-6" />
+                        </button>
+                        <div className="w-16 h-16 bg-green-100 rounded-full mx-auto flex items-center justify-center mb-4">
+                            <svg className="w-10 h-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <h2 id="confirmation-title" className="text-2xl font-bold text-brand-dark mb-2">
+                            شكراً لطلبك!
+                        </h2>
+                        <p className="text-gray-600">
+                            تم تأكيد طلبك بنجاح. سنقوم بتجهيزه وشحنه في أقرب وقت ممكن.
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+        
+        // --- FROM components/Cart.tsx ---
+        const Cart = ({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, onCheckout }) => {
+            const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            const [removingItems, setRemovingItems] = useState(new Set());
+
+            const handleRemove = (itemId) => {
+                setRemovingItems(prev => new Set(prev).add(itemId));
+                setTimeout(() => {
+                    onRemoveItem(itemId);
+                    setRemovingItems(prev => {
+                        const newSet = new Set(prev);
+                        newSet.delete(itemId);
+                        return newSet;
+                    });
+                }, 300);
+            };
+            
+            const handleUpdateQuantityWithRemove = (item) => {
+                if (item.quantity > 1) {
+                    onUpdateQuantity(item.id, item.quantity - 1)
+                } else {
+                    handleRemove(item.id)
+                }
+            }
+
+            return (
+                <React.Fragment>
+                    <div
+                        className={`fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                        onClick={onClose}
+                        aria-hidden={!isOpen}
+                    />
+                    <div
+                        className={`fixed top-0 right-0 h-full w-full max-w-md bg-brand-light shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="cart-heading"
+                    >
+                        <div className="flex flex-col h-full">
+                            <div className="flex justify-between items-center p-6 border-b border-brand-accent">
+                                <h2 id="cart-heading" className="text-2xl font-bold text-brand-dark">سلة التسوق</h2>
+                                <button onClick={onClose} className="text-gray-500 hover:text-black" aria-label="Close cart">
+                                    <CloseIcon className="w-6 h-6" />
+                                </button>
+                            </div>
+
+                            {items.length === 0 ? (
+                                <div className="flex-grow flex items-center justify-center">
+                                    <p className="text-gray-500 text-lg">سلتك فارغة.</p>
+                                </div>
+                            ) : (
+                                <div className="flex-grow overflow-y-auto p-6 space-y-4">
+                                    {items.map((item, index) => (
+                                        <div 
+                                            key={item.id} 
+                                            className={`flex items-center space-x-4 space-x-reverse bg-white p-4 rounded-lg shadow-sm transition-all duration-300 ease-in-out ${removingItems.has(item.id) ? 'opacity-0 transform translate-x-full' : 'opacity-100 transform translate-x-0'}`}
+                                            style={{ transitionDelay: removingItems.has(item.id) ? '0ms' : `${index * 50}ms` }}
+                                        >
+                                            <div className="w-16 h-16 rounded-md flex-shrink-0" style={{ backgroundColor: item.color }}></div>
+                                            <div className="flex-grow">
+                                                <h3 className="font-semibold text-brand-dark">{item.name}</h3>
+                                                <p className="text-sm text-gray-500">{item.size} / {item.packaging}</p>
+                                                <p className="text-sm text-gray-500 truncate" title={item.scents.join(', ')}>{item.scents.join(', ')}</p>
+                                                <p className="text-md font-bold text-brand-primary mt-1">{item.price.toFixed(2)} د.أ</p>
+                                            </div>
+                                            <div className="flex flex-col items-end space-y-2">
+                                                <div className="flex items-center border border-gray-200 rounded-md">
+                                                    <button onClick={() => onUpdateQuantity(item.id, item.quantity + 1)} className="p-1.5 text-gray-600 hover:bg-gray-100"><PlusIcon className="w-4 h-4" /></button>
+                                                    <span className="px-3 text-sm font-medium">{item.quantity}</span>
+                                                    <button onClick={() => handleUpdateQuantityWithRemove(item)} className="p-1.5 text-gray-600 hover:bg-gray-100"><MinusIcon className="w-4 h-4" /></button>
+                                                </div>
+                                                <button onClick={() => handleRemove(item.id)} className="text-red-500 hover:text-red-700" aria-label={`Remove ${item.name}`}>
+                                                    <TrashIcon className="w-5 h-5" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {items.length > 0 && (
+                                <div className="p-6 border-t border-brand-accent bg-white">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <span className="text-lg font-medium text-gray-700">المجموع</span>
+                                        <span className="text-2xl font-bold text-brand-dark">{total.toFixed(2)} د.أ</span>
+                                    </div>
+                                    <button
+                                        onClick={onCheckout}
+                                        className="w-full bg-brand-primary text-white py-3 rounded-lg font-semibold text-lg hover:bg-brand-secondary transition-all"
+                                    >
+                                        تأكيد الطلب
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </React.Fragment>
+            );
+        };
+        
+        // --- FROM components/CandlePreview.tsx ---
+        const CandlePreview = ({ color, size }) => {
+            const sizeClasses = { 'صغيرة': 'w-24 h-32', 'وسط': 'w-32 h-48', 'كبيرة': 'w-40 h-64' };
+            return (
+                <div className="flex items-center justify-center p-8 bg-gray-100 rounded-lg min-h-[400px] md:min-h-0 md:h-full">
+                    <div
+                        className={`rounded-lg shadow-lg transition-all duration-300 ease-in-out relative ${sizeClasses[size]}`}
+                        style={{ backgroundColor: color }}
+                    >
+                        <div className="absolute inset-0 rounded-lg" style={{boxShadow: 'inset 0 0 20px rgba(0,0,0,0.1)'}}></div>
+                        <div className="absolute top-3 left-1/2 -translate-x-1/2 w-1 h-4 bg-gray-600 rounded-t-full"></div>
+                    </div>
+                </div>
+            );
+        };
+        
+        // --- FROM components/ProductCustomizer.tsx ---
+        const ProductCustomizer = ({ onAddToCart }) => {
+            const [size, setSize] = useState('وسط');
+            const [scents, setScents] = useState([]);
+            const [color, setColor] = useState(COLOR_OPTIONS[0]);
+            const [packaging, setPackaging] = useState('استخدام شخصي');
+
+            const price = useMemo(() => PRICING_MAP[packaging][size], [packaging, size]);
+
+            const handleScentChange = (scent) => {
+                setScents(prevScents =>
+                    prevScents.includes(scent)
+                        ? prevScents.filter(s => s !== scent)
+                        : [...prevScents, scent]
+                );
+            };
+
+            const handleAddToCartClick = () => {
+                if (scents.length === 0) {
+                    alert('الرجاء اختيار رائحة واحدة على الأقل.');
+                    return;
+                }
+                const name = `شمعة ${size} بـ ${scents.join(' و ')}`;
+                onAddToCart({ name, size, scents, color, packaging });
+            };
+
+            return (
+                <section className="container mx-auto px-6 py-12 md:py-20">
+                    <div className="grid md:grid-cols-2 gap-10 lg:gap-16 items-start">
+                        <div className="md:sticky top-28">
+                            <CandlePreview color={color} size={size} />
+                        </div>
+
+                        <div className="space-y-8">
+                            <div>
+                                <h2 className="text-4xl font-bold text-brand-dark mb-4">صمم شمعتك الخاصة</h2>
+                                <p className="text-gray-600">اختر التفاصيل التي تفضلها لتحصل على شمعة فريدة من نوعها.</p>
+                            </div>
+                            
+                            <div>
+                                <h3 className="text-lg font-medium text-brand-dark mb-3">١. اختر الحجم
+                                  <span className="text-sm text-gray-500 font-normal mr-2">(الوزن لكمية الشمع فقط)</span>
+                                </h3>
+                                <div className="grid grid-cols-3 gap-3">
+                                    {SIZES.map(s => (
+                                        <button
+                                            key={s.name}
+                                            onClick={() => setSize(s.name)}
+                                            className={`text-center p-4 border rounded-lg transition-all ${size === s.name ? 'bg-brand-primary text-white border-brand-primary ring-2 ring-brand-primary' : 'bg-white hover:border-brand-secondary'}`}
+                                        >
+                                            <span className="block font-semibold">{s.name}</span>
+                                            <span className="text-sm">{s.weight}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 className="text-lg font-medium text-brand-dark mb-3">٢. اختر الروائح (٣ كحد أقصى)</h3>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                    {SCENTS_OPTIONS.map(scent => (
+                                        <button
+                                            key={scent}
+                                            onClick={() => handleScentChange(scent)}
+                                            disabled={!scents.includes(scent) && scents.length >= 3}
+                                            className={`p-3 border rounded-lg transition-colors text-sm ${scents.includes(scent) ? 'bg-brand-primary text-white border-brand-primary' : 'bg-white hover:border-brand-secondary disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed'}`}
+                                        >
+                                            {scent}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 className="text-lg font-medium text-brand-dark mb-3">٣. اختر اللون</h3>
+                                <div className="flex flex-wrap gap-3">
+                                    {COLOR_OPTIONS.map(c => (
+                                        <button
+                                            key={c}
+                                            onClick={() => setColor(c)}
+                                            className={`w-10 h-10 rounded-full border-2 transition-transform transform hover:scale-110 ${color === c ? 'ring-2 ring-offset-2 ring-brand-primary border-white' : 'border-gray-200'}`}
+                                            style={{ backgroundColor: c }}
+                                            aria-label={`Select color ${c}`}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h3 className="text-lg font-medium text-brand-dark mb-3">٤. اختر التغليف</h3>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {PACKAGING_OPTIONS.map(p => (
+                                        <button
+                                            key={p}
+                                            onClick={() => setPackaging(p)}
+                                            className={`p-4 border rounded-lg transition-all text-center ${packaging === p ? 'bg-brand-primary text-white border-brand-primary ring-2 ring-brand-primary' : 'bg-white hover:border-brand-secondary'}`}
+                                        >
+                                            {p}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="pt-6 border-t border-gray-200 flex items-center justify-between">
+                                <div>
+                                    <p className="text-gray-500">السعر</p>
+                                    <p className="text-3xl font-bold text-brand-dark">{price.toFixed(2)} د.أ</p>
+                                </div>
+                                <button
+                                    onClick={handleAddToCartClick}
+                                    className="bg-brand-primary text-white font-bold py-4 px-10 rounded-lg text-lg hover:bg-brand-secondary transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                                >
+                                    أضف إلى السلة
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        // --- FROM App.tsx ---
+        function App() {
+            const [cartItems, setCartItems] = useState([]);
+            const [isCartOpen, setIsCartOpen] = useState(false);
+            const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
+
+            const cartItemCount = useMemo(() => cartItems.reduce((sum, item) => sum + item.quantity, 0), [cartItems]);
+
+            const generateCandleId = (candle) => {
+                const sortedScents = [...candle.scents].sort().join(',');
+                return `${candle.size}-${candle.color}-${candle.packaging}-${sortedScents}`;
+            };
+
+            const handleAddToCart = (candleData) => {
+                const id = generateCandleId(candleData);
+                const price = PRICING_MAP[candleData.packaging][candleData.size];
+                
+                const existingItem = cartItems.find(item => item.id === id);
+
+                if (existingItem) {
+                    setCartItems(cartItems.map(item =>
+                        item.id === id ? { ...item, quantity: item.quantity + 1 } : item
+                    ));
+                } else {
+                    const newItem = {
+                        ...candleData,
+                        id,
+                        price,
+                        quantity: 1,
+                    };
+                    setCartItems([...cartItems, newItem]);
+                }
+                setIsCartOpen(true);
+            };
+
+            const handleUpdateQuantity = (itemId, newQuantity) => {
+                if (newQuantity < 1) {
+                    handleRemoveItem(itemId);
+                    return;
+                }
+                setCartItems(cartItems.map(item =>
+                    item.id === itemId ? { ...item, quantity: newQuantity } : item
+                ));
+            };
+
+            const handleRemoveItem = (itemId) => {
+                setCartItems(cartItems.filter(item => item.id !== itemId));
+            };
+
+            const handleCheckout = () => {
+                if (cartItems.length === 0) return;
+                setIsCartOpen(false);
+                setIsConfirmationOpen(true);
+            };
+
+            const handleCloseConfirmation = () => {
+                setIsConfirmationOpen(false);
+                setCartItems([]);
+            };
+
+            return (
+                <div className="bg-gray-50 min-h-screen text-gray-800">
+                    <Header cartItemCount={cartItemCount} onCartClick={() => setIsCartOpen(true)} />
+                    <main>
+                        <Hero />
+                        <ProductCustomizer onAddToCart={handleAddToCart} />
+                    </main>
+                    <Cart
+                        isOpen={isCartOpen}
+                        onClose={() => setIsCartOpen(false)}
+                        items={cartItems}
+                        onUpdateQuantity={handleUpdateQuantity}
+                        onRemoveItem={handleRemoveItem}
+                        onCheckout={handleCheckout}
+                    />
+                    <ConfirmationModal
+                        isOpen={isConfirmationOpen}
+                        onClose={handleCloseConfirmation}
+                    />
+                </div>
+            );
+        }
+        
+        // --- Final Rendering Call ---
+        const rootElement = document.getElementById('root');
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(<React.StrictMode><App /></React.StrictMode>);
+    </script>
+</body>
+</html>
