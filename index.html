@@ -57,7 +57,50 @@
     <script type="text/babel">
         const { useState, useMemo, useEffect, useRef } = React;
 
-        // --- FROM constants.ts ---
+        // --- UTILITY: Function to send order to dashboard via localStorage ---
+        function sendOrderToDashboard(customerInfo, cartItems) {
+            const ORDERS_STORAGE_KEY = 'LUME_ORDERS';
+
+            const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            
+            // Map storefront items to dashboard item format
+            const orderItems = cartItems.map(item => ({
+                id: item.id,
+                name: item.name,
+                size: item.size,
+                scents: item.scents,
+                color: item.color,
+                packaging: item.packaging,
+                price: item.price,
+                quantity: item.quantity,
+            }));
+
+            const newOrder = {
+                id: `#${Math.floor(Math.random() * 9000) + 1000}`,
+                date: new Date().toISOString(),
+                customerName: customerInfo.name,
+                customerPhone: customerInfo.phone,
+                items: orderItems,
+                total: total,
+                status: 'جديد',
+            };
+
+            let allOrders = [];
+            try {
+                const savedOrders = localStorage.getItem(ORDERS_STORAGE_KEY);
+                if (savedOrders) {
+                    allOrders = JSON.parse(savedOrders);
+                }
+            } catch (e) {
+                console.error("Could not read previous orders:", e);
+            }
+
+            const updatedOrders = [newOrder, ...allOrders];
+            localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(updatedOrders));
+            console.log('Order sent to dashboard successfully!');
+        }
+
+        // --- CONSTANTS ---
         const SIZES = [
             { name: 'صغيرة', weight: '٨٠ غرام' },
             { name: 'وسط', weight: '١٦٠ غرام' },
@@ -71,7 +114,7 @@
             'هدية': { 'صغيرة': 4.75, 'وسط': 7.50, 'كبيرة': 9.50 }
         };
 
-        // --- FROM components/icons ---
+        // --- ICONS ---
         const CartIcon = (props) => (
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c.51 0 .962-.328 1.103-.846l1.5-5.25a.75.75 0 0 0-.7-1.036H5.216a.75.75 0 0 0-.7 1.036l1.5 5.25a1.125 1.125 0 0 1-1.103.846H7.5Z" />
@@ -98,7 +141,7 @@
             </svg>
         );
 
-        // --- FROM components/Header.tsx ---
+        // --- COMPONENTS ---
         const Header = ({ cartItemCount, onCartClick }) => {
             const [isAnimating, setIsAnimating] = useState(false);
             const prevCartItemCount = useRef(cartItemCount);
@@ -133,7 +176,6 @@
             );
         };
 
-        // --- FROM components/Hero.tsx ---
         const Hero = () => {
             return (
                 <div className="relative h-[60vh] bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1594313016519-640ed4727d26?q=80&w=2070&auto=format&fit=crop')" }}>
@@ -148,7 +190,66 @@
             );
         };
 
-        // --- FROM components/ConfirmationModal.tsx ---
+        const CheckoutModal = ({ isOpen, onClose, onConfirm }) => {
+            const [name, setName] = useState('');
+            const [phone, setPhone] = useState('');
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (name.trim() === '') {
+                    alert('يرجى إدخال الاسم.');
+                    return;
+                }
+                onConfirm({ name, phone });
+            };
+
+            if (!isOpen) return null;
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+                    <div className="bg-white rounded-lg shadow-2xl max-w-md w-full text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+                            <h2 className="text-2xl font-bold text-brand-dark">إكمال الطلب</h2>
+                            <button onClick={onClose} className="text-gray-400 hover:text-gray-600" aria-label="Close modal">
+                                <CloseIcon className="w-6 h-6" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleSubmit}>
+                            <div className="p-6 space-y-4">
+                                <div>
+                                    <label htmlFor="customerName" className="block text-sm font-medium text-gray-700 mb-1">الاسم الكامل *</label>
+                                    <input 
+                                      type="text" 
+                                      id="customerName" 
+                                      value={name} 
+                                      onChange={(e) => setName(e.target.value)} 
+                                      className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-primary focus:border-brand-primary" 
+                                      required 
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="customerPhone" className="block text-sm font-medium text-gray-700 mb-1">رقم الهاتف (اختياري)</label>
+                                    <input 
+                                      type="tel" 
+                                      id="customerPhone" 
+                                      value={phone} 
+                                      onChange={(e) => setPhone(e.target.value)} 
+                                      className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-primary focus:border-brand-primary"
+                                      placeholder="07xxxxxxxx"
+                                    />
+                                </div>
+                            </div>
+                            <div className="p-6 bg-gray-50 text-left">
+                                <button type="submit" className="w-full bg-brand-primary text-white py-3 rounded-lg font-semibold text-lg hover:bg-brand-secondary transition-all">
+                                    تأكيد وإرسال الطلب
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+        
         const ConfirmationModal = ({ isOpen, onClose }) => {
             if (!isOpen) return null;
 
@@ -181,14 +282,13 @@
                             شكراً لطلبك!
                         </h2>
                         <p className="text-gray-600">
-                            تم تأكيد طلبك بنجاح. سنقوم بتجهيزه وشحنه في أقرب وقت ممكن.
+                            تم إرسال طلبك بنجاح. سيتم التواصل معك قريبًا للتأكيد.
                         </p>
                     </div>
                 </div>
             );
         };
         
-        // --- FROM components/Cart.tsx ---
         const Cart = ({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, onCheckout }) => {
             const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
             const [removingItems, setRemovingItems] = useState(new Set());
@@ -288,7 +388,6 @@
             );
         };
         
-        // --- FROM components/CandlePreview.tsx ---
         const CandlePreview = ({ color, size }) => {
             const sizeClasses = { 'صغيرة': 'w-24 h-32', 'وسط': 'w-32 h-48', 'كبيرة': 'w-40 h-64' };
             return (
@@ -304,7 +403,6 @@
             );
         };
         
-        // --- FROM components/ProductCustomizer.tsx ---
         const ProductCustomizer = ({ onAddToCart }) => {
             const [size, setSize] = useState('وسط');
             const [scents, setScents] = useState([]);
@@ -425,10 +523,11 @@
             );
         };
 
-        // --- FROM App.tsx ---
+        // --- MAIN APP COMPONENT ---
         function App() {
             const [cartItems, setCartItems] = useState([]);
             const [isCartOpen, setIsCartOpen] = useState(false);
+            const [isCheckoutModalOpen, setCheckoutModalOpen] = useState(false);
             const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
 
             const cartItemCount = useMemo(() => cartItems.reduce((sum, item) => sum + item.quantity, 0), [cartItems]);
@@ -477,6 +576,12 @@
             const handleCheckout = () => {
                 if (cartItems.length === 0) return;
                 setIsCartOpen(false);
+                setCheckoutModalOpen(true);
+            };
+            
+            const handleConfirmOrder = (customerInfo) => {
+                sendOrderToDashboard(customerInfo, cartItems);
+                setCheckoutModalOpen(false);
                 setIsConfirmationOpen(true);
             };
 
@@ -499,6 +604,11 @@
                         onUpdateQuantity={handleUpdateQuantity}
                         onRemoveItem={handleRemoveItem}
                         onCheckout={handleCheckout}
+                    />
+                    <CheckoutModal
+                        isOpen={isCheckoutModalOpen}
+                        onClose={() => setCheckoutModalOpen(false)}
+                        onConfirm={handleConfirmOrder}
                     />
                     <ConfirmationModal
                         isOpen={isConfirmationOpen}
